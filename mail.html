@@ -1,0 +1,1811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mass Meal Calculation Website</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN for charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Custom styles to enhance Tailwind */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e0e7ed; /* Lighter, more inviting background */
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+        }
+        .header {
+            background-color: #2c3e50; /* Dark blue-gray header */
+            background-image: linear-gradient(to right, #2c3e50, #34495e); /* Subtle gradient */
+            color: #ffffff;
+            padding: 1rem 2rem;
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15); /* More pronounced shadow */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .nav-link {
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease-in-out; /* Smoother transition */
+            color: #ffffff;
+            text-decoration: none;
+            position: relative; /* For underline effect */
+            overflow: hidden;
+        }
+        .nav-link:hover {
+            background-color: #34495e; /* Slightly lighter on hover */
+            transform: translateY(-2px); /* Slight lift effect */
+        }
+        .nav-link.active {
+            background-color: #3498db; /* Blue for active link */
+            box-shadow: 0 4px 8px rgba(52, 152, 219, 0.4); /* Stronger shadow */
+            transform: translateY(-1px);
+        }
+        /* Active link pseudo-element for a subtle underline */
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: #ffffff;
+            transform: scaleX(0);
+            transform-origin: bottom right;
+            transition: transform 0.3s ease-out;
+        }
+        .nav-link.active:hover::after {
+            transform: scaleX(1);
+            transform-origin: bottom left;
+        }
+
+
+        .page-content {
+            flex-grow: 1;
+            padding: 20px;
+            display: none; /* Hidden by default, shown by JS */
+            justify-content: center;
+            align-items: flex-start;
+        }
+        .page-content.active {
+            display: flex;
+        }
+
+        .dashboard-container {
+            background-color: #ffffff;
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); /* Even stronger shadow */
+            padding: 2.5rem;
+            max-width: 1400px;
+            width: 100%;
+            display: grid;
+            gap: 2rem;
+            grid-template-columns: 1fr;
+        }
+        @media (min-width: 768px) {
+            .dashboard-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (min-width: 1200px) {
+            .dashboard-container {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .dashboard-section {
+            background-color: #fcfdff; /* Slightly whiter background for sections */
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.08); /* Enhanced shadow for sections */
+            border: 1px solid #e2e8f0; /* Subtle border */
+        }
+
+        .section-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            text-align: center;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.05); /* Subtle text shadow */
+        }
+        .input-group label {
+            font-weight: 600;
+            color: #34495e;
+            margin-bottom: 0.25rem;
+            display: block;
+        }
+        .input-group input[type="number"],
+        .input-group input[type="password"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #a0aec0; /* Slightly darker border */
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            color: #2c3e50;
+            transition: all 0.2s ease-in-out;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); /* Inner shadow */
+        }
+        .input-group input[type="number"]:focus,
+        .input-group input[type="password"]:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.3), inset 0 1px 3px rgba(0,0,0,0.05); /* Blue glow on focus */
+        }
+        .btn {
+            padding: 0.75rem 1.75rem; /* Slightly wider buttons */
+            border-radius: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease-in-out; /* Smoother transition */
+            text-align: center;
+            border: none; /* Remove default border */
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.15); /* Light overlay for hover effect */
+            border-radius: 50%;
+            transition: width 0.4s ease-in-out, height 0.4s ease-in-out, top 0.4s ease-in-out, left 0.4s ease-in-out;
+            transform: translate(-50%, -50%);
+            z-index: -1;
+        }
+        .btn:hover::before {
+            width: 200%;
+            height: 200%;
+            top: 0%;
+            left: 0%;
+        }
+
+        .btn-primary {
+            background-color: #3498db; /* Blue */
+            background-image: linear-gradient(to right, #3498db, #2980b9); /* Blue gradient */
+            color: #ffffff;
+            box-shadow: 0 6px 12px rgba(52, 152, 219, 0.4);
+        }
+        .btn-primary:hover {
+            background-color: #2980b9; /* Darker blue */
+            box-shadow: 0 8px 16px rgba(52, 152, 219, 0.5);
+            transform: translateY(-3px);
+        }
+        .btn-secondary {
+            background-color: #e74c3c; /* Red */
+            background-image: linear-gradient(to right, #e74c3c, #c0392b); /* Red gradient */
+            color: #ffffff;
+            box-shadow: 0 6px 12px rgba(231, 76, 60, 0.4);
+        }
+        .btn-secondary:hover {
+            background-color: #c0392b; /* Darker red */
+            box-shadow: 0 8px 16px rgba(231, 76, 60, 0.5);
+            transform: translateY(-3px);
+        }
+        .result-box {
+            background-color: #eef4f7; /* Slightly darker light gray */
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.08); /* Stronger inner shadow */
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.6rem 0; /* Slightly more padding */
+            border-bottom: 1px dashed #bdc3c7;
+        }
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        .result-item strong {
+            color: #2c3e50;
+        }
+        .result-item span {
+            color: #34495e;
+        }
+        .total-summary {
+            font-size: 1.35rem; /* Slightly larger */
+            font-weight: 700;
+            color: #27ae60; /* Green for totals */
+            margin-top: 1.25rem;
+            padding-top: 1.25rem;
+            border-top: 2px solid #27ae60;
+            text-align: center;
+            text-shadow: 0 1px 1px rgba(0,128,0,0.1); /* Subtle green text shadow */
+        }
+
+        /* Styles for individual meal count inputs and tables */
+        .daily-tracker-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        .daily-tracker-table th,
+        .daily-tracker-table td {
+            border: 1px solid #cbd5e0;
+            padding: 0.6rem; /* Slightly more padding */
+            text-align: center;
+        }
+        .daily-tracker-table th {
+            background-color: #dbe4ee; /* Slightly darker header */
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        #dailyIndividualMealCountsContainer input[type="number"] {
+            padding: 0.5rem; /* Slightly more padding */
+            font-size: 0.95rem; /* Slightly larger font */
+            text-align: center;
+        }
+        #dailyIndividualMealCountsContainer input[type="number"]:disabled {
+            background-color: #e2e8f0;
+            cursor: not-allowed;
+        }
+
+        /* Styles for Fixed Bill results */
+        .fixed-bill-results {
+            background-color: #e8fcf0; /* Very light green background */
+            border-radius: 0.75rem;
+            padding: 1.25rem; /* More padding */
+            margin-top: 1.5rem;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.1); /* Stronger inner shadow */
+            border: 1px solid #c8e6c9; /* Green border */
+        }
+        .fixed-bill-results h4 {
+            font-size: 1.2rem; /* Slightly larger */
+            font-weight: 600;
+            color: #2e7d32;
+            margin-bottom: 0.75rem;
+            text-align: center;
+        }
+        .fixed-bill-results .result-item {
+            border-bottom: 1px dotted #a5d6a7;
+        }
+
+        /* Chart specific styles */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        /* Notice Board */
+        .notice-board {
+            background-color: #fff8e1; /* Even lighter orange for notice */
+            border-left: 6px solid #ff9800; /* Thicker orange border */
+            border-radius: 0.75rem; /* More rounded */
+            padding: 1.75rem; /* More padding */
+            margin-top: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08); /* Stronger shadow */
+        }
+        .notice-board h3 {
+            font-size: 1.35rem; /* Slightly larger */
+            font-weight: 700;
+            color: #e65100;
+            margin-bottom: 1rem;
+        }
+        .notice-board p {
+            color: #424242;
+            line-height: 1.6; /* Better readability */
+        }
+        .notice-content {
+            margin-bottom: 1.25rem;
+            min-height: 60px; /* More height */
+            border-bottom: 1px dashed #ffcc80; /* Lighter orange dashed line */
+            padding-bottom: 0.75rem;
+        }
+
+        /* Modals (Password, Alert, Confirm) */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5); /* Darker overlay */
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #ffffff; /* Pure white content */
+            margin: auto;
+            padding: 25px; /* More padding */
+            border-radius: 1.25rem; /* More rounded */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4); /* Stronger shadow */
+            width: 85%;
+            max-width: 450px; /* Slightly wider */
+            text-align: center;
+            border: 1px solid #e0e0e0; /* Subtle border */
+        }
+        .modal-content input,
+        .modal-content textarea {
+            margin-bottom: 1.25rem; /* More margin */
+            border: 1px solid #a0aec0;
+            border-radius: 0.6rem; /* More rounded */
+            padding: 0.85rem; /* More padding */
+            width: 100%;
+            box-sizing: border-box;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .modal-content button {
+            margin: 0 0.75rem; /* More margin between buttons */
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1 class="text-2xl font-bold">Meal Manager</h1>
+        <nav>
+            <a href="#home" class="nav-link active" data-page="home">Home</a>
+            <a href="#dashboard" class="nav-link" data-page="dashboard">Dashboard</a>
+            <a href="#calculator" class="nav-link" data-page="calculator">Month Calculator</a>
+        </nav>
+    </header>
+
+    <!-- Page 1: Home -->
+    <div id="homePage" class="page-content active">
+        <div class="dashboard-container">
+            <div class="dashboard-section col-span-full">
+                <h2 class="section-title">Meal Statistics Overview</h2>
+                <div class="chart-container">
+                    <canvas id="mealChart"></canvas>
+                </div>
+            </div>
+
+            <div class="dashboard-section col-span-full md:col-span-1">
+                <h2 class="section-title">Previous Month's Data</h2>
+                <div class="result-box">
+                    <p class="text-gray-700">
+                        This section displays the most recently calculated monthly summary.
+                    </p>
+                    <div class="mt-4 p-3 bg-blue-100 rounded">
+                        <p><strong>Calculated On:</strong> <span id="prevMonthCalcDate">N/A</span></p>
+                        <p><strong>Total Bazar Expenses:</strong> $<span id="prevMonthTotalBazar">0.00</span></p>
+                        <p><strong>Total Meals:</strong> <span id="prevMonthTotalMeals">0</span></p>
+                        <p><strong>Cost Per Meal:</strong> $<span id="prevMonthCostPerMeal">0.00</span></p>
+                        <p><strong>Total Shared Fixed Bills:</strong> $<span id="prevMonthTotalSharedFixed">0.00</span></p>
+                        <p><strong>Shared Fixed Cost Per Person:</strong> $<span id="prevMonthSharedFixedPerPerson">0.00</span></p>
+                        <p><strong>Total Individual Fixed Contributions:</strong> $<span id="prevMonthTotalIndividualFixed">0.00</span></p>
+                        <h4 class="font-bold mt-4 mb-2">Individual Balances:</h4>
+                        <ul id="prevMonthIndividualBalances" class="list-disc list-inside">
+                            <!-- Balances will be inserted here by JS -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-section col-span-full md:col-span-1">
+                <h2 class="section-title">Notice Board</h2>
+                <div class="notice-board">
+                    <h3>Important Announcements</h3>
+                    <div id="noticeContent" class="notice-content">
+                        <!-- Notices will be loaded here -->
+                    </div>
+                    <textarea id="noticeInput" class="w-full p-2 border rounded resize-y" rows="4" placeholder="Type your notice here..."></textarea>
+                    <div class="flex justify-end gap-2 mt-2">
+                        <button id="saveNoticeBtn" class="btn btn-primary text-sm">Save Notice</button>
+                        <button id="clearNoticeBtn" class="btn btn-secondary text-sm">Clear Notices</button>
+                    </div>
+                    <p class="mt-2 text-sm text-gray-500">Last updated: <span id="noticeLastUpdated">N/A</span></p>
+                </div>
+            </div>
+
+            <div class="dashboard-section col-span-full">
+                <h2 class="section-title">This Month's Paid/Non-Paid Status</h2>
+                <p class="text-sm text-gray-600 mb-4 text-center">Enter amounts paid or owed by each person for this month.</p>
+                <div class="flex justify-center mb-4 gap-4">
+                    <button id="enablePaidStatusEditBtn" class="btn btn-primary">Enable Editing</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="input-group">
+                        <label for="paidAshraful">Ashraful:</label>
+                        <input type="number" id="paidAshraful" value="0" min="0" disabled>
+                    </div>
+                    <div class="input-group">
+                        <label for="paidTuhin">Tuhin:</label>
+                        <input type="number" id="paidTuhin" value="0" min="0" disabled>
+                    </div>
+                    <div class="input-group">
+                        <label for="paidTohidul">Tohidul:</label>
+                        <input type="number" id="paidTohidul" value="0" min="0" disabled>
+                    </div>
+                    <div class="input-group">
+                        <label for="paidSayem">Sayem:</label>
+                        <input type="number" id="paidSayem" value="0" min="0" disabled>
+                    </div>
+                    <div class="input-group">
+                        <label for="paidSani">Sani:</label>
+                        <input type="number" id="paidSani" value="0" min="0" disabled>
+                    </div>
+                </div>
+                <div class="flex justify-center mt-6">
+                    <button id="savePaidStatusBtn" class="btn btn-primary">Save Paid Status</button>
+                </div>
+                <div id="paidStatusDisplay" class="result-box mt-4">
+                    <h4 class="font-bold text-center mb-2">Current Paid Status:</h4>
+                    <ul id="currentPaidStatusList" class="list-disc list-inside">
+                        <!-- Paid status will be displayed here -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 2: Dashboard -->
+    <div id="dashboardPage" class="page-content">
+        <div class="dashboard-container">
+            <!-- Individual Daily Meal Counts Section -->
+            <div class="dashboard-section col-span-full">
+                <h2 class="section-title">Individual Daily Meal Counts (30 Days)</h2>
+                <p class="text-sm text-gray-600 mb-4 text-center">Enter the number of meals each person had per day (e.g., 1 for one meal, 0 for no meal).</p>
+                <div class="flex justify-center mb-4 gap-4">
+                    <button id="enableMealEditBtn" class="btn btn-primary">Enable Meal Editing</button>
+                    <button id="changePasswordBtn" class="btn btn-secondary">Change Password</button>
+                </div>
+                <div id="dailyIndividualMealCountsContainer" class="overflow-x-auto">
+                    <table class="daily-tracker-table">
+                        <thead>
+                            <tr>
+                                <th>Day</th>
+                                <th>Ashraful</th>
+                                <th>Tuhin</th>
+                                <th>Tohidul</th>
+                                <th>Sayem</th>
+                                <th>Sani</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dailyIndividualMealCountsBody">
+                            <!-- Daily individual meal count inputs will be generated here by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 3: Month Calculator -->
+    <div id="calculatorPage" class="page-content">
+        <div class="dashboard-container">
+            <!-- Dashboard Expenses Section -->
+            <div class="dashboard-section col-span-full md:col-span-1">
+                <h2 class="section-title">Dashboard Expenses</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <!-- Individual Fixed Contributions -->
+                    <div class="input-group">
+                        <label for="fixedAshraful">Ashraful's Fixed:</label>
+                        <input type="number" id="fixedAshraful" value="0" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="fixedTuhin">Tuhin's Fixed:</label>
+                        <input type="number" id="fixedTuhin" value="0" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="fixedTohidul">Tohidul's Fixed:</label>
+                        <input type="number" id="fixedTohidul" value="0" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="fixedSayem">Sayem's Fixed:</label>
+                        <input type="number" id="fixedSayem" value="0" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="fixedSani">Sani's Fixed:</label>
+                        <input type="number" id="fixedSani" value="0" min="0">
+                    </div>
+
+                    <!-- Shared Fixed Bills -->
+                    <div class="input-group">
+                        <label for="currentBill">Current Bill (Shared):</label>
+                        <input type="number" id="currentBill" value="0" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="wifiBill">Wi-Fi Bill (Shared):</label>
+                        <input type="number" id="wifiBill" value="0" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="cleanBill">Cleaning Bill (Shared):</label>
+                        <input type="number" id="cleanBill" value="0" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="waterBill">Water Bill (Shared):</label>
+                        <input type="number" id="waterBill" value="0" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="khalaBill">Khala Bill (Shared):</label>
+                        <input type="number" id="khalaBill" value="0" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="gasBill">Gas Bill (Shared):</label>
+                        <input type="number" id="gasBill" value="0" min="0">
+                    </div>
+                </div>
+                <div class="flex justify-center mt-6">
+                    <button id="calculateFixedBtn" class="btn btn-primary">Calculate Fixed Bill Per Person</button>
+                </div>
+                <div id="fixedBillResults" class="fixed-bill-results hidden">
+                    <h4>Fixed Bill Breakdown:</h4>
+                    <!-- Results will be displayed here -->
+                </div>
+            </div>
+
+            <!-- Bazar Expenses Section -->
+            <div class="dashboard-section col-span-full md:col-span-1">
+                <h2 class="section-title">Bazar Expenses</h2>
+                <p class="text-sm text-gray-600 mb-4 text-center">Enter total bazar amount for each person.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="input-group">
+                        <label for="bazarAshraful">Ashraful:</label>
+                        <input type="number" id="bazarAshraful" value="0" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="bazarTuhin">Tuhin:</label>
+                        <input type="number" id="bazarTuhin" value="0" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="bazarTohidul">Tohidul:</label>
+                        <input type="number" id="bazarTohidul" value="0" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="bazarSayem">Sayem:</label>
+                        <input type="number" id="bazarSayem" value="0" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="bazarSani">Sani:</label>
+                        <input type="number" id="bazarSani" value="0" min="0">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monthly Summary & Full Calculation -->
+            <div class="dashboard-section col-span-full md:col-span-1">
+                <h2 class="section-title">Monthly Summary & Calculation</h2>
+                <div class="flex justify-center mt-4 mb-6">
+                    <button id="calculateBtn" class="btn btn-primary">Calculate Full Monthly Cost</button>
+                </div>
+                <div id="resultsDisplay" class="result-box">
+                    <p class="text-gray-700 text-center">Enter values and click "Calculate Full Monthly Cost" to see results.</p>
+                </div>
+            </div>
+
+            <!-- Reset Button (for Month Calculator page specific) -->
+            <div class="col-span-full flex justify-center mt-4">
+                <button id="resetBtn" class="btn btn-secondary">Reset All Data</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Modal -->
+    <div id="passwordModal" class="modal">
+        <div class="modal-content">
+            <h3 class="text-xl font-bold mb-4">Enter Password</h3>
+            <input type="password" id="passwordInput" class="w-full p-2 border rounded mb-4" placeholder="Enter password">
+            <button id="submitPasswordBtn" class="btn btn-primary">Submit</button>
+            <button id="cancelPasswordBtn" class="btn btn-secondary">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="changePasswordModal" class="modal">
+        <div class="modal-content">
+            <h3 class="text-xl font-bold mb-4">Change Password</h3>
+            <input type="password" id="currentPasswordInput" class="w-full p-2 border rounded mb-2" placeholder="Current password">
+            <input type="password" id="newPasswordInput" class="w-full p-2 border rounded mb-2" placeholder="New password">
+            <input type="password" id="confirmNewPasswordInput" class="w-full p-2 border rounded mb-4" placeholder="Confirm new password">
+            <button id="submitChangePasswordBtn" class="btn btn-primary">Change Password</button>
+            <button id="cancelChangePasswordBtn" class="btn btn-secondary">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Custom Alert Modal -->
+    <div id="customAlertModal" class="modal">
+        <div class="modal-content">
+            <h3 id="customAlertTitle" class="text-xl font-bold mb-4">Alert</h3>
+            <p id="customAlertMessage" class="mb-6"></p>
+            <button id="customAlertOkBtn" class="btn btn-primary">OK</button>
+        </div>
+    </div>
+
+    <!-- Custom Confirm Modal -->
+    <div id="customConfirmModal" class="modal">
+        <div class="modal-content">
+            <h3 id="customConfirmTitle" class="text-xl font-bold mb-4">Confirm</h3>
+            <p id="customConfirmMessage" class="mb-6"></p>
+            <button id="customConfirmYesBtn" class="btn btn-primary">Yes</button>
+            <button id="customConfirmNoBtn" class="btn btn-secondary">No</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, where, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Configuration (provided by Canvas environment)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "AIzaSyDWtzaIdMw5l1vpS2qZn91AKOHqaMS3NPU",
+            authDomain: "fir-ai-app-ae581.firebaseapp.com",
+            databaseURL: "https://fir-ai-app-ae581-default-rtdb.firebaseio.com",
+            projectId: "fir-ai-app-ae581",
+            storageBucket: "fir-ai-app-ae581.firebasestorage.app",
+            messagingSenderId: "717483416539",
+            appId: "1:717483416539:web:5d43eea3d539e512ce25fe"
+        };
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let userId = null; // Will store the authenticated user's ID
+
+        // --- Custom Alert/Confirm Modals ---
+        const customAlertModal = document.getElementById('customAlertModal');
+        const customAlertTitle = document.getElementById('customAlertTitle');
+        const customAlertMessage = document.getElementById('customAlertMessage');
+        const customAlertOkBtn = document.getElementById('customAlertOkBtn');
+
+        const customConfirmModal = document.getElementById('customConfirmModal');
+        const customConfirmTitle = document.getElementById('customConfirmTitle');
+        const customConfirmMessage = document.getElementById('customConfirmMessage');
+        const customConfirmYesBtn = document.getElementById('customConfirmYesBtn');
+        const customConfirmNoBtn = document.getElementById('customConfirmNoBtn');
+
+        function showAlert(message, title = 'Alert') {
+            customAlertTitle.textContent = title;
+            customAlertMessage.textContent = message;
+            customAlertModal.style.display = 'flex';
+            return new Promise(resolve => {
+                customAlertOkBtn.onclick = () => {
+                    customAlertModal.style.display = 'none';
+                    resolve(true);
+                };
+            });
+        }
+
+        function showConfirm(message, title = 'Confirm') {
+            customConfirmTitle.textContent = title;
+            customConfirmMessage.textContent = message;
+            customConfirmModal.style.display = 'flex';
+            return new Promise(resolve => {
+                customConfirmYesBtn.onclick = () => {
+                    customConfirmModal.style.display = 'none';
+                    resolve(true);
+                };
+                customConfirmNoBtn.onclick = () => {
+                    customConfirmModal.style.display = 'none';
+                    resolve(false);
+                };
+            });
+        }
+
+        // Override window.alert and window.confirm
+        window.alert = showAlert;
+        window.confirm = showConfirm;
+
+        // --- Global Variables and Constants ---
+        const people = ['Ashraful', 'Tuhin', 'Tohidul', 'Sayem', 'Sani'];
+        const numberOfPeopleForSharedBills = 5;
+        let currentPassword = "1234"; // Default password, will be loaded from Firestore
+
+        // --- DOM Element References ---
+        // Navigation
+        const navLinks = document.querySelectorAll('.nav-link');
+        const homePage = document.getElementById('homePage');
+        const dashboardPage = document.getElementById('dashboardPage');
+        const calculatorPage = document.getElementById('calculatorPage');
+
+        // Dashboard Expenses (Month Calculator Page)
+        const currentBillInput = document.getElementById('currentBill');
+        const wifiBillInput = document.getElementById('wifiBill');
+        const cleanBillInput = document.getElementById('cleanBill');
+        const waterBillInput = document.getElementById('waterBill');
+        const khalaBillInput = document.getElementById('khalaBill');
+        const gasBillInput = document.getElementById('gasBill');
+
+        const fixedInputs = {
+            ashraful: document.getElementById('fixedAshraful'),
+            tuhin: document.getElementById('fixedTuhin'),
+            tohidul: document.getElementById('fixedTohidul'),
+            sayem: document.getElementById('fixedSayem'),
+            sani: document.getElementById('fixedSani')
+        };
+
+        const bazarInputs = {
+            ashraful: document.getElementById('bazarAshraful'),
+            tuhin: document.getElementById('bazarTuhin'),
+            tohidul: document.getElementById('bazarTohidul'),
+            sayem: document.getElementById('bazarSayem'),
+            sani: document.getElementById('bazarSani')
+        };
+
+        const calculateBtn = document.getElementById('calculateBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const resultsDisplay = document.getElementById('resultsDisplay');
+
+        // Fixed Bill Calculation elements (Month Calculator Page)
+        const calculateFixedBtn = document.getElementById('calculateFixedBtn');
+        const fixedBillResultsDiv = document.getElementById('fixedBillResults');
+
+        // Daily Individual Meal Counts (Dashboard Page)
+        const dailyIndividualMealCountsBody = document.getElementById('dailyIndividualMealCountsBody');
+        const enableMealEditBtn = document.getElementById('enableMealEditBtn');
+        const changePasswordBtn = document.getElementById('changePasswordBtn');
+
+        // Password Modal
+        const passwordModal = document.getElementById('passwordModal');
+        const passwordInput = document.getElementById('passwordInput');
+        const submitPasswordBtn = document.getElementById('submitPasswordBtn');
+        const cancelPasswordBtn = document.getElementById('cancelPasswordBtn');
+
+        // Change Password Modal
+        const changePasswordModal = document.getElementById('changePasswordModal');
+        const currentPasswordInput = document.getElementById('currentPasswordInput');
+        const newPasswordInput = document.getElementById('newPasswordInput');
+        const confirmNewPasswordInput = document.getElementById('confirmNewPasswordInput');
+        const submitChangePasswordBtn = document.getElementById('submitChangePasswordBtn');
+        const cancelChangePasswordBtn = document.getElementById('cancelChangePasswordBtn');
+
+        // Chart elements (Home Page)
+        const mealChartCanvas = document.getElementById('mealChart');
+        let mealChartInstance; // To hold the Chart.js instance
+
+        // Notice Board elements (Home Page)
+        const noticeContentDiv = document.getElementById('noticeContent');
+        const noticeInput = document.getElementById('noticeInput');
+        const saveNoticeBtn = document.getElementById('saveNoticeBtn');
+        const clearNoticeBtn = document.getElementById('clearNoticeBtn');
+        const noticeLastUpdatedSpan = document.getElementById('noticeLastUpdated');
+
+        // Previous Month's Data elements (Home Page)
+        const prevMonthCalcDateSpan = document.getElementById('prevMonthCalcDate');
+        const prevMonthTotalBazarSpan = document.getElementById('prevMonthTotalBazar');
+        const prevMonthTotalMealsSpan = document.getElementById('prevMonthTotalMeals');
+        const prevMonthCostPerMealSpan = document.getElementById('prevMonthCostPerMeal');
+        const prevMonthTotalSharedFixedSpan = document.getElementById('prevMonthTotalSharedFixed');
+        const prevMonthSharedFixedPerPersonSpan = document.getElementById('prevMonthSharedFixedPerPerson');
+        const prevMonthTotalIndividualFixedSpan = document.getElementById('prevMonthTotalIndividualFixed');
+        const prevMonthIndividualBalancesList = document.getElementById('prevMonthIndividualBalances');
+
+        // Paid/Non-Paid Status elements (Home Page)
+        const paidStatusInputs = {
+            ashraful: document.getElementById('paidAshraful'),
+            tuhin: document.getElementById('paidTuhin'),
+            tohidul: document.getElementById('paidTohidul'),
+            sayem: document.getElementById('paidSayem'),
+            sani: document.getElementById('paidSani')
+        };
+        const enablePaidStatusEditBtn = document.getElementById('enablePaidStatusEditBtn');
+        const savePaidStatusBtn = document.getElementById('savePaidStatusBtn');
+        const currentPaidStatusList = document.getElementById('currentPaidStatusList');
+
+
+        // --- Firebase Data References ---
+        const appSettingsDocRef = doc(db, `artifacts/${appId}/public/data/appSettings/password`);
+        const noticeDocRef = doc(db, `artifacts/${appId}/public/data/notices/mainNotice`);
+        let expensesDocRef = null; // Will be set after user authentication
+        let mealCountsCollectionRef = null; // Will be set after user authentication
+        let monthlySummaryDocRef = null; // Will be set after user authentication
+        let monthlyPaymentsDocRef = null; // New: Will be set after user authentication
+
+
+        // --- Helper Functions for Loading Data into Inputs ---
+        function loadExpensesIntoInputs(data) {
+            currentBillInput.value = data.currentBill || 0;
+            wifiBillInput.value = data.wifiBill || 0;
+            cleanBillInput.value = data.cleanBill || 0;
+            waterBillInput.value = data.waterBill || 0;
+            khalaBillInput.value = data.khalaBill || 0;
+            gasBillInput.value = data.gasBill || 0;
+
+            for (const person of people) {
+                const personId = person.toLowerCase();
+                fixedInputs[personId].value = data.fixedContributions?.[personId] || 0;
+                bazarInputs[personId].value = data.bazarContributions?.[personId] || 0;
+            }
+        }
+
+        function loadDailyMealCountsIntoInputs(mealData) {
+            for (let day = 1; day <= 30; day++) {
+                const dayId = `day${day}`;
+                const dailyData = mealData[dayId] || {};
+                people.forEach(person => {
+                    const personId = person.toLowerCase();
+                    const inputId = `meal-${personId}-day-${day}`;
+                    const inputElement = document.getElementById(inputId);
+                    if (inputElement) {
+                        inputElement.value = dailyData[personId] || 0;
+                    }
+                });
+            }
+        }
+
+        // --- Firebase Authentication Listener ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userId = user.uid;
+                console.log("Firebase Authenticated. User ID:", userId);
+                expensesDocRef = doc(db, `artifacts/${appId}/users/${userId}/expenses/currentMonth`);
+                mealCountsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/mealCounts`);
+                monthlySummaryDocRef = doc(db, `artifacts/${appId}/users/${userId}/monthlySummaries/current`);
+                monthlyPaymentsDocRef = doc(db, `artifacts/${appId}/users/${userId}/monthlyPayments/current`); // New Doc Ref
+
+                // Load initial data from Firestore after authentication
+                await loadPasswordFromFirestore();
+                await loadNoticeFromFirestore();
+                await loadExpensesFromFirestore();
+                await loadDailyMealCountsFromFirestore();
+                await loadPreviousMonthDataFromFirestore(); // Load monthly summary
+                await loadMonthlyPaymentsFromFirestore(); // New: Load monthly payments
+
+                // Set up real-time listeners
+                onSnapshot(noticeDocRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        displayNotice(data.content, data.timestamp);
+                    } else {
+                        displayNotice('No notices yet.', 'N/A');
+                    }
+                });
+
+                onSnapshot(expensesDocRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        loadExpensesIntoInputs(data);
+                    } else {
+                        console.log("No expenses data for this user yet.");
+                        resetExpenseInputs(); // Clear inputs if no data
+                    }
+                });
+
+                onSnapshot(mealCountsCollectionRef, (snapshot) => {
+                    const mealData = {};
+                    snapshot.docs.forEach(doc => {
+                        mealData[doc.id] = doc.data();
+                    });
+                    loadDailyMealCountsIntoInputs(mealData);
+                });
+
+                onSnapshot(monthlySummaryDocRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        displayPreviousMonthData(docSnap.data());
+                    } else {
+                        displayPreviousMonthData(null); // Clear if no data
+                    }
+                });
+
+                onSnapshot(monthlyPaymentsDocRef, (docSnap) => { // New: Listener for monthly payments
+                    if (docSnap.exists()) {
+                        displayMonthlyPayments(docSnap.data());
+                    } else {
+                        displayMonthlyPayments(null); // Clear if no data
+                    }
+                });
+
+
+            } else {
+                // User is signed out or not authenticated, sign in anonymously
+                try {
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (error) {
+                    console.error("Error signing in:", error);
+                    showAlert("Failed to sign in. Please try again later.");
+                }
+            }
+        });
+
+
+        // --- Page Navigation Functions ---
+        function showPage(pageId) {
+            // Hide all pages
+            homePage.classList.remove('active');
+            dashboardPage.classList.remove('active');
+            calculatorPage.classList.remove('active');
+
+            // Show the requested page
+            document.getElementById(pageId).classList.add('active');
+
+            // Update active navigation link
+            navLinks.forEach(link => {
+                if (link.dataset.page === pageId.replace('Page', '')) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+
+            // Special handling for dashboard page: disable inputs by default
+            if (pageId === 'dashboardPage') {
+                disableMealInputs();
+            } else if (pageId === 'homePage') {
+                // The onSnapshot listener for notice will handle loading
+                // The chart will be updated by calculateMealCost, which is called on load
+            }
+        }
+
+        // --- Password Protection for Meal Inputs ---
+        function enableMealInputs() {
+            const inputs = dailyIndividualMealCountsBody.querySelectorAll('input[type="number"]');
+            inputs.forEach(input => {
+                input.disabled = false;
+                input.addEventListener('change', saveDailyMealCountToFirestore); // Add event listener for saving
+            });
+            enableMealEditBtn.textContent = 'Editing Enabled';
+            enableMealEditBtn.disabled = true; // Disable button once editing is enabled
+        }
+
+        function disableMealInputs() {
+            const inputs = dailyIndividualMealCountsBody.querySelectorAll('input[type="number"]');
+            inputs.forEach(input => {
+                input.disabled = true;
+                input.removeEventListener('change', saveDailyMealCountToFirestore); // Remove listener
+            });
+            enableMealEditBtn.textContent = 'Enable Meal Editing';
+            enableMealEditBtn.disabled = false; // Re-enable button
+        }
+
+        // --- Password Protection for Paid Status Inputs ---
+        function enablePaidStatusInputs() {
+            for (const personId in paidStatusInputs) {
+                paidStatusInputs[personId].disabled = false;
+                paidStatusInputs[personId].addEventListener('change', saveMonthlyPaymentsToFirestore); // Add change listener
+            }
+            enablePaidStatusEditBtn.textContent = 'Editing Enabled';
+            enablePaidStatusEditBtn.disabled = true;
+        }
+
+        function disablePaidStatusInputs() {
+            for (const personId in paidStatusInputs) {
+                paidStatusInputs[personId].disabled = true;
+                paidStatusInputs[personId].removeEventListener('change', saveMonthlyPaymentsToFirestore); // Remove change listener
+            }
+            enablePaidStatusEditBtn.textContent = 'Enable Editing';
+            enablePaidStatusEditBtn.disabled = false;
+        }
+
+        function showPasswordModalForPaidStatus() {
+            passwordModal.style.display = 'flex';
+            passwordInput.value = ''; // Clear previous input
+            passwordInput.focus();
+            // Temporarily change submit button behavior for this modal context
+            submitPasswordBtn.onclick = async () => {
+                if (passwordInput.value === currentPassword) {
+                    hidePasswordModal();
+                    enablePaidStatusInputs();
+                } else {
+                    await showAlert('Incorrect password. Please try again.');
+                    passwordInput.value = '';
+                }
+                // Restore original behavior if needed, or handle within this scope
+                submitPasswordBtn.onclick = checkPassword; // Restore original for meal inputs
+            };
+            cancelPasswordBtn.onclick = () => {
+                hidePasswordModal();
+                submitPasswordBtn.onclick = checkPassword; // Restore original
+            };
+        }
+
+        function showPasswordModal() {
+            passwordModal.style.display = 'flex';
+            passwordInput.value = ''; // Clear previous input
+            passwordInput.focus();
+            submitPasswordBtn.onclick = checkPassword; // Ensure correct function is called
+            cancelPasswordBtn.onclick = hidePasswordModal;
+        }
+
+
+        function hidePasswordModal() {
+            passwordModal.style.display = 'none';
+        }
+
+        async function checkPassword() {
+            if (passwordInput.value === currentPassword) {
+                hidePasswordModal();
+                enableMealInputs(); // This is the original path for meal inputs
+            } else {
+                await showAlert('Incorrect password. Please try again.');
+                passwordInput.value = '';
+            }
+        }
+
+        // --- Change Password Functionality ---
+        function showChangePasswordModal() {
+            changePasswordModal.style.display = 'flex';
+            currentPasswordInput.value = '';
+            newPasswordInput.value = '';
+            confirmNewPasswordInput.value = '';
+            currentPasswordInput.focus();
+        }
+
+        function hideChangePasswordModal() {
+            changePasswordModal.style.display = 'none';
+        }
+
+        async function changePassword() {
+            const enteredCurrentPassword = currentPasswordInput.value;
+            const newPass = newPasswordInput.value;
+            const confirmNewPass = confirmNewPasswordInput.value;
+
+            if (enteredCurrentPassword !== currentPassword) {
+                await showAlert('Current password is incorrect.');
+                return;
+            }
+            if (newPass.length < 4) { // Simple validation
+                await showAlert('New password must be at least 4 characters long.');
+                return;
+            }
+            if (newPass !== confirmNewPass) {
+                await showAlert('New password and confirm password do not match.');
+                return;
+            }
+
+            try {
+                await setDoc(appSettingsDocRef, { password: newPass });
+                currentPassword = newPass; // Update local variable after successful Firestore update
+                await showAlert('Password changed successfully!');
+                hideChangePasswordModal();
+            } catch (error) {
+                console.error("Error changing password:", error);
+                await showAlert("Failed to change password. Please try again.");
+            }
+        }
+
+        async function loadPasswordFromFirestore() {
+            try {
+                const docSnap = await getDoc(appSettingsDocRef);
+                if (docSnap.exists()) {
+                    currentPassword = docSnap.data().password;
+                    console.log("Password loaded from Firestore.");
+                } else {
+                    // If no password exists, set a default and save it
+                    await setDoc(appSettingsDocRef, { password: "1234" });
+                    currentPassword = "1234";
+                    console.log("Default password '1234' set and saved to Firestore.");
+                }
+            } catch (error) {
+                console.error("Error loading password from Firestore:", error);
+                // Fallback to hardcoded default if Firestore fails
+                currentPassword = "1234";
+                showAlert("Could not load password from database. Using default '1234'.");
+            }
+        }
+
+        // --- Notice Board Functions (Firestore Integrated) ---
+        async function saveNotice() {
+            const noticeText = noticeInput.value.trim();
+            const timestamp = new Date().toLocaleString();
+            try {
+                await setDoc(noticeDocRef, { content: noticeText, timestamp: timestamp });
+                await showAlert('Notice saved successfully!');
+            } catch (error) {
+                console.error("Error saving notice:", error);
+                await showAlert("Failed to save notice. Please try again.");
+            }
+        }
+
+        function displayNotice(content, timestamp) {
+            if (content) {
+                noticeContentDiv.innerHTML = `<p>${content.replace(/\n/g, '<br>')}</p>`;
+                noticeInput.value = content; // Populate textarea for editing
+            } else {
+                noticeContentDiv.innerHTML = '<p class="text-gray-500">No notices yet.</p>';
+                noticeInput.value = '';
+            }
+            noticeLastUpdatedSpan.textContent = timestamp || 'N/A';
+        }
+
+        async function loadNoticeFromFirestore() {
+            // This is primarily handled by the onSnapshot listener, but this function
+            // ensures initial load if the listener hasn't fired yet or for specific needs.
+            try {
+                const docSnap = await getDoc(noticeDocRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    displayNotice(data.content, data.timestamp);
+                } else {
+                    displayNotice('No notices yet.', 'N/A');
+                }
+            } catch (error) {
+                console.error("Error loading notice from Firestore:", error);
+                displayNotice('Error loading notices.', 'N/A');
+            }
+        }
+
+        async function clearNotices() {
+            const confirmed = await showConfirm('Are you sure you want to clear all notices? This action cannot be undone.');
+            if (confirmed) {
+                try {
+                    await setDoc(noticeDocRef, { content: '', timestamp: new Date().toLocaleString() }); // Clear content
+                    await showAlert('Notices cleared!');
+                } catch (error) {
+                    console.error("Error clearing notices:", error);
+                    await showAlert("Failed to clear notices. Please try again.");
+                }
+            }
+        }
+
+        // --- Expense Data Functions (Firestore Integrated) ---
+        async function saveExpensesToFirestore() {
+            if (!userId) {
+                console.warn("User not authenticated, cannot save expenses.");
+                return;
+            }
+
+            const expensesData = {
+                currentBill: parseFloat(currentBillInput.value) || 0,
+                wifiBill: parseFloat(wifiBillInput.value) || 0,
+                cleanBill: parseFloat(cleanBillInput.value) || 0,
+                waterBill: parseFloat(waterBillInput.value) || 0,
+                khalaBill: parseFloat(khalaBillInput.value) || 0,
+                gasBill: parseFloat(gasBillInput.value) || 0,
+                fixedContributions: {}
+            };
+
+            for (const person of people) {
+                const personId = person.toLowerCase();
+                expensesData.fixedContributions[personId] = parseFloat(fixedInputs[personId].value) || 0;
+            }
+
+            expensesData.bazarContributions = {};
+            for (const person of people) {
+                const personId = person.toLowerCase();
+                expensesData.bazarContributions[personId] = parseFloat(bazarInputs[personId].value) || 0;
+            }
+
+            try {
+                await setDoc(expensesDocRef, expensesData);
+                console.log("Expenses saved to Firestore.");
+            } catch (error) {
+                console.error("Error saving expenses:", error);
+                await showAlert("Failed to save expenses. Please try again.");
+            }
+        }
+
+
+        async function loadExpensesFromFirestore() {
+            if (!userId) return;
+            try {
+                const docSnap = await getDoc(expensesDocRef);
+                if (docSnap.exists()) {
+                    loadExpensesIntoInputs(docSnap.data());
+                } else {
+                    console.log("No expenses data found in Firestore for this user.");
+                    resetExpenseInputs();
+                }
+            } catch (error) {
+                console.error("Error loading expenses from Firestore:", error);
+                await showAlert("Failed to load expenses data.");
+            }
+        }
+
+        function resetExpenseInputs() {
+            currentBillInput.value = 0;
+            wifiBillInput.value = 0;
+            cleanBillInput.value = 0;
+            waterBillInput.value = 0;
+            khalaBillInput.value = 0;
+            gasBillInput.value = 0;
+
+            for (const person of people) {
+                const personId = person.toLowerCase();
+                fixedInputs[personId].value = 0;
+                bazarInputs[personId].value = 0;
+            }
+        }
+
+        // --- Daily Individual Meal Counts Functions (Firestore Integrated) ---
+        function generateDailyIndividualMealCounts() {
+            dailyIndividualMealCountsBody.innerHTML = ''; // Clear previous content
+            for (let day = 1; day <= 30; day++) {
+                let rowHTML = `<tr><td>Day ${day}</td>`;
+                people.forEach(person => {
+                    const personId = person.toLowerCase();
+                    const inputId = `meal-${personId}-day-${day}`;
+                    rowHTML += `
+                        <td>
+                            <input type="number" id="${inputId}" class="w-full p-1 text-center border rounded" value="0" min="0" data-person="${personId}" data-day="${day}" disabled>
+                        </td>
+                    `;
+                });
+                rowHTML += `</tr>`;
+                dailyIndividualMealCountsBody.innerHTML += rowHTML;
+            }
+        }
+
+        async function saveDailyMealCountToFirestore(event) {
+            if (!userId) {
+                console.warn("User not authenticated, cannot save meal count.");
+                return;
+            }
+            const input = event.target;
+            const personId = input.dataset.person;
+            const day = input.dataset.day;
+            const value = parseFloat(input.value) || 0;
+
+            try {
+                const docRef = doc(db, `artifacts/${appId}/users/${userId}/mealCounts/day${day}`);
+                await setDoc(docRef, { [personId]: value }, { merge: true });
+                console.log(`Saved meal count for ${personId} on Day ${day}: ${value}`);
+            } catch (error) {
+                console.error("Error saving daily meal count:", error);
+                await showAlert("Failed to save meal count. Please try again.");
+            }
+        }
+
+        async function loadDailyMealCountsFromFirestore() {
+            if (!userId) return;
+            try {
+                const querySnapshot = await getDocs(mealCountsCollectionRef);
+                querySnapshot.forEach(docSnap => {
+                    const day = docSnap.id.replace('day', ''); // e.g., 'day1' -> '1'
+                    const data = docSnap.data();
+                    for (const personId in data) {
+                        const inputId = `meal-${personId}-day-${day}`;
+                        const inputElement = document.getElementById(inputId);
+                        if (inputElement) {
+                            inputElement.value = data[personId];
+                        }
+                    }
+                });
+                console.log("Daily meal counts loaded from Firestore.");
+            } catch (error) {
+                console.error("Error loading daily meal counts:", error);
+                await showAlert("Failed to load daily meal counts.");
+            }
+        }
+
+        // --- Monthly Summary Data Functions (Firestore Integrated) ---
+        async function saveMonthlySummaryToFirestore(summaryData) {
+            if (!userId) {
+                console.warn("User not authenticated, cannot save monthly summary.");
+                return;
+            }
+            try {
+                await setDoc(monthlySummaryDocRef, summaryData);
+                console.log("Monthly summary saved to Firestore.");
+            } catch (error) {
+                console.error("Error saving monthly summary:", error);
+                await showAlert("Failed to save monthly summary. Please try again.");
+            }
+        }
+
+        function displayPreviousMonthData(data) {
+            if (data) {
+                prevMonthCalcDateSpan.textContent = data.calculationDate || 'N/A';
+                prevMonthTotalBazarSpan.textContent = (data.totalBazarExpenses || 0).toFixed(2);
+                prevMonthTotalMealsSpan.textContent = data.totalMeals || 0;
+                prevMonthCostPerMealSpan.textContent = (data.costPerMeal || 0).toFixed(2);
+                prevMonthTotalSharedFixedSpan.textContent = (data.totalSharedFixedBills || 0).toFixed(2);
+                prevMonthSharedFixedPerPersonSpan.textContent = (data.sharedFixedCostPerPerson || 0).toFixed(2);
+                prevMonthTotalIndividualFixedSpan.textContent = (data.totalIndividualFixedContributions || 0).toFixed(2);
+
+                prevMonthIndividualBalancesList.innerHTML = '';
+                if (data.individualBalances) {
+                    for (const personId in data.individualBalances) {
+                        const balance = data.individualBalances[personId];
+                        const listItem = document.createElement('li');
+                        listItem.textContent = `${people.find(p => p.toLowerCase() === personId) || personId}: $${balance.toFixed(2)} (${balance > 0 ? 'Owes' : 'Gets Back'})`;
+                        listItem.className = balance > 0 ? 'text-red-700' : 'text-green-700';
+                        prevMonthIndividualBalancesList.appendChild(listItem);
+                    }
+                }
+            } else {
+                prevMonthCalcDateSpan.textContent = 'N/A';
+                prevMonthTotalBazarSpan.textContent = '0.00';
+                prevMonthTotalMealsSpan.textContent = '0';
+                prevMonthCostPerMealSpan.textContent = '0.00';
+                prevMonthTotalSharedFixedSpan.textContent = '0.00';
+                prevMonthSharedFixedPerPersonSpan.textContent = '0.00';
+                prevMonthTotalIndividualFixedSpan.textContent = '0.00';
+                prevMonthIndividualBalancesList.innerHTML = '<li class="text-gray-500">No previous month data.</li>';
+            }
+        }
+
+        async function loadPreviousMonthDataFromFirestore() {
+            if (!userId) return;
+            try {
+                const docSnap = await getDoc(monthlySummaryDocRef);
+                if (docSnap.exists()) {
+                    displayPreviousMonthData(docSnap.data());
+                } else {
+                    displayPreviousMonthData(null);
+                    console.log("No previous month summary found in Firestore for this user.");
+                }
+            } catch (error) {
+                console.error("Error loading previous month summary:", error);
+                await showAlert("Failed to load previous month's summary.");
+            }
+        }
+
+        // --- Monthly Payments (Paid/Non-Paid) Functions (Firestore Integrated) ---
+        async function saveMonthlyPaymentsToFirestore() {
+            if (!userId) {
+                console.warn("User not authenticated, cannot save monthly payments.");
+                return;
+            }
+            const paymentsData = {};
+            for (const person of people) {
+                const personId = person.toLowerCase();
+                paymentsData[personId] = parseFloat(paidStatusInputs[personId].value) || 0;
+            }
+
+            try {
+                await setDoc(monthlyPaymentsDocRef, paymentsData);
+                console.log("Monthly payments saved to Firestore.");
+                await showAlert('Monthly payments saved successfully!');
+            } catch (error) {
+                console.error("Error saving monthly payments:", error);
+                await showAlert("Failed to save monthly payments. Please try again.");
+            }
+        }
+
+        function displayMonthlyPayments(data) {
+            currentPaidStatusList.innerHTML = '';
+            if (data) {
+                for (const person of people) {
+                    const personId = person.toLowerCase();
+                    const amount = data[personId] || 0;
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `${person}: $${amount.toFixed(2)}`;
+                    currentPaidStatusList.appendChild(listItem);
+                    // Also update the input fields
+                    paidStatusInputs[personId].value = amount;
+                }
+            } else {
+                currentPaidStatusList.innerHTML = '<li class="text-gray-500">No paid status data.</li>';
+                for (const personId in paidStatusInputs) {
+                    paidStatusInputs[personId].value = 0;
+                }
+            }
+            disablePaidStatusInputs(); // Ensure inputs are disabled after loading
+        }
+
+        async function loadMonthlyPaymentsFromFirestore() {
+            if (!userId) return;
+            try {
+                const docSnap = await getDoc(monthlyPaymentsDocRef);
+                if (docSnap.exists()) {
+                    displayMonthlyPayments(docSnap.data());
+                } else {
+                    displayMonthlyPayments(null);
+                    console.log("No monthly payments data found in Firestore for this user.");
+                }
+            } catch (error) {
+                console.error("Error loading monthly payments:", error);
+                await showAlert("Failed to load monthly payments data.");
+            }
+        }
+
+
+        // --- Calculation Functions ---
+
+        // Function to calculate and display only fixed bills per person
+        async function calculateFixedBillsPerPerson() {
+            // Ensure latest data is loaded before calculation
+            await loadExpensesFromFirestore();
+
+            // Get values for shared fixed bills
+            const currentBill = parseFloat(currentBillInput.value) || 0;
+            const wifiBill = parseFloat(wifiBillInput.value) || 0;
+            const cleanBill = parseFloat(cleanBillInput.value) || 0;
+            const waterBill = parseFloat(waterBillInput.value) || 0;
+            const khalaBill = parseFloat(khalaBillInput.value) || 0;
+            const gasBill = parseFloat(gasBillInput.value) || 0;
+
+            const totalSharedFixedBills = currentBill + wifiBill + cleanBill + waterBill + khalaBill + gasBill;
+            const sharedFixedCostPerPerson = totalSharedFixedBills / numberOfPeopleForSharedBills;
+
+            let fixedResultsHTML = `
+                <div class="result-item">
+                    <strong>Total Shared Fixed Bills:</strong>
+                    <span>${totalSharedFixedBills.toFixed(2)}</span>
+                </div>
+                <div class="result-item">
+                    <strong>Shared Fixed Cost Per Person:</strong>
+                    <span>${sharedFixedCostPerPerson.toFixed(2)}</span>
+                </div>
+                <hr class="my-2 border-gray-300">
+            `;
+
+            let totalAllFixedContributions = 0;
+            const personIndividualFixedContributions = {};
+            for (const person of people) {
+                const personId = person.toLowerCase();
+                const individualFixedContribution = parseFloat(fixedInputs[personId].value) || 0;
+                personIndividualFixedContributions[personId] = individualFixedContribution;
+                totalAllFixedContributions += individualFixedContribution;
+
+                const totalFixedCostForPerson = individualFixedContribution + sharedFixedCostPerPerson;
+
+                fixedResultsHTML += `
+                    <div class="result-item">
+                        <strong>${person}'s Total Fixed Bill:</strong>
+                        <span class="font-bold">${totalFixedCostForPerson.toFixed(2)}</span>
+                    </div>
+                `;
+            }
+            fixedResultsHTML += `
+                <hr class="my-2 border-gray-300">
+                <div class="result-item">
+                    <strong>Grand Total Fixed Contributions:</strong>
+                    <span class="font-bold">${totalAllFixedContributions.toFixed(2)}</span>
+                </div>
+            `;
+
+
+            fixedBillResultsDiv.innerHTML = fixedResultsHTML;
+            fixedBillResultsDiv.classList.remove('hidden'); // Show the results div
+        }
+
+        // Function to update the meal chart
+        function updateMealChart(personMealCounts) {
+            const labels = people;
+            const data = people.map(person => personMealCounts[person.toLowerCase()]);
+
+            if (mealChartInstance) {
+                mealChartInstance.data.labels = labels;
+                mealChartInstance.data.datasets[0].data = data;
+                mealChartInstance.update();
+            } else {
+                const ctx = mealChartCanvas.getContext('2d');
+                mealChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Total Meals',
+                            data: data,
+                            backgroundColor: [
+                                'rgba(52, 152, 219, 0.7)', /* Blue */
+                                'rgba(46, 204, 113, 0.7)', /* Green */
+                                'rgba(241, 196, 15, 0.7)', /* Yellow */
+                                'rgba(231, 76, 60, 0.7)',  /* Red */
+                                'rgba(155, 89, 182, 0.7)'  /* Purple */
+                            ],
+                            borderColor: [
+                                'rgba(52, 152, 219, 1)',
+                                'rgba(46, 204, 113, 1)',
+                                'rgba(241, 196, 15, 1)',
+                                'rgba(231, 76, 60, 1)',
+                                'rgba(155, 89, 182, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Number of Meals',
+                                    color: '#34495e'
+                                },
+                                ticks: {
+                                    color: '#555'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Person',
+                                    color: '#34495e'
+                                },
+                                ticks: {
+                                    color: '#555'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false // Hide legend for single dataset
+                            },
+                            title: {
+                                display: true,
+                                text: 'Total Meals Per Person',
+                                color: '#2c3e50',
+                                font: {
+                                    size: 16
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+
+        // Function to calculate full meal cost
+        async function calculateMealCost() {
+            // Ensure latest data is loaded before calculation
+            await loadExpensesFromFirestore();
+            await loadDailyMealCountsFromFirestore();
+
+            // Get values for shared fixed bills, default to 0 if empty or invalid
+            const currentBill = parseFloat(currentBillInput.value) || 0;
+            const wifiBill = parseFloat(wifiBillInput.value) || 0;
+            const cleanBill = parseFloat(cleanBillInput.value) || 0;
+            const waterBill = parseFloat(waterBillInput.value) || 0;
+            const khalaBill = parseFloat(khalaBillInput.value) || 0;
+            const gasBill = parseFloat(gasBillInput.value) || 0;
+
+            // Calculate total shared fixed bills
+            const totalSharedFixedBills = currentBill + wifiBill + cleanBill + waterBill + khalaBill + gasBill;
+            const sharedFixedCostPerPerson = totalSharedFixedBills / numberOfPeopleForSharedBills;
+
+            // Get individual fixed contributions
+            let totalIndividualFixedContributions = 0;
+            const personIndividualFixedContributions = {};
+            for (const person of people) {
+                const amount = parseFloat(fixedInputs[person.toLowerCase()].value) || 0;
+                personIndividualFixedContributions[person.toLowerCase()] = amount;
+                totalIndividualFixedContributions += amount;
+            }
+
+            // Get bazar expenses for each person
+            let totalBazarExpenses = 0;
+            const personBazarContributions = {};
+            for (const person of people) {
+                const amount = parseFloat(bazarInputs[person.toLowerCase()].value) || 0;
+                personBazarContributions[person.toLowerCase()] = amount;
+                totalBazarExpenses += amount;
+            }
+
+            // Calculate total meals for each person from daily individual meal count inputs
+            let totalMeals = 0;
+            const personMealCounts = {
+                ashraful: 0,
+                tuhin: 0,
+                tohidul: 0,
+                sayem: 0,
+                sani: 0
+            };
+
+            for (let day = 1; day <= 30; day++) {
+                people.forEach(person => {
+                    const personId = person.toLowerCase();
+                    const inputId = `meal-${personId}-day-${day}`;
+                    const inputElement = document.getElementById(inputId);
+                    const mealsToday = parseFloat(inputElement.value) || 0;
+                    personMealCounts[personId] += mealsToday;
+                    totalMeals += mealsToday;
+                });
+            }
+
+            let resultsHTML = '';
+            const individualBalances = {}; // To store balances for saving
+
+            if (totalMeals === 0) {
+                resultsHTML = '<p class="text-red-600 text-center font-bold">Error: Total meals cannot be zero. Please enter meal counts.</p>';
+            } else {
+                // Calculate cost per meal based on total bazar expenses
+                const costPerMeal = totalBazarExpenses / totalMeals;
+
+                resultsHTML += `<div class="total-summary">Total Bazar Expenses: ${totalBazarExpenses.toFixed(2)}</div>`;
+                resultsHTML += `<div class="total-summary">Total Meals: ${totalMeals}</div>`;
+                resultsHTML += `<div class="total-summary">Cost Per Meal: ${costPerMeal.toFixed(2)}</div>`;
+                resultsHTML += `<div class="total-summary">Total Shared Fixed Bills: ${totalSharedFixedBills.toFixed(2)}</div>`;
+                resultsHTML += `<div class="total-summary">Shared Fixed Cost Per Person: ${sharedFixedCostPerPerson.toFixed(2)}</div>`;
+                resultsHTML += `<div class="total-summary">Total Individual Fixed Contributions: ${totalIndividualFixedContributions.toFixed(2)}</div>`;
+                resultsHTML += `<h3 class="text-xl font-bold text-center text-blue-800 mt-6 mb-4">Individual Contributions:</h3>`;
+
+                // Calculate individual contributions
+                for (const person of people) {
+                    const personId = person.toLowerCase();
+                    const meals = personMealCounts[personId];
+                    const bazarContribution = personBazarContributions[personId];
+                    const individualFixedContribution = personIndividualFixedContributions[personId];
+                    const mealCostForPerson = meals * costPerMeal;
+
+                    // Total fixed cost for this person (their individual fixed + their share of shared fixed)
+                    const totalFixedCostForPerson = individualFixedContribution + sharedFixedCostPerPerson;
+
+                    // Net adjustment for bazar: (what they should pay for meals) - (what they paid for bazar)
+                    const netBazarAdjustment = mealCostForPerson - bazarContribution;
+
+                    // Total amount owed/to be paid by the person
+                    // This is (their meal cost share) + (their total fixed cost) - (their bazar contribution)
+                    const totalOwed = netBazarAdjustment + totalFixedCostForPerson;
+                    individualBalances[personId] = totalOwed; // Store for saving
+
+                    resultsHTML += `
+                        <div class="result-item">
+                            <strong>${person}:</strong>
+                            <span>
+                                Meals: ${meals} |
+                                Bazar Paid: ${bazarContribution.toFixed(2)} |
+                                Meal Cost: ${mealCostForPerson.toFixed(2)} |
+                                Individual Fixed: ${individualFixedContribution.toFixed(2)} |
+                                Shared Fixed: ${sharedFixedCostPerPerson.toFixed(2)} |
+                                Total Fixed: ${totalFixedCostForPerson.toFixed(2)}
+                            </span>
+                        </div>
+                        <div class="result-item font-bold ${totalOwed > 0 ? 'text-red-700' : 'text-green-700'}">
+                            <strong>${totalOwed > 0 ? 'Owes' : 'Gets Back'}:</strong>
+                            <span>${Math.abs(totalOwed).toFixed(2)}</span>
+                        </div>
+                        <hr class="my-2 border-gray-300">
+                    `;
+                }
+
+                // Save the full monthly summary to Firestore
+                const monthlySummaryData = {
+                    totalBazarExpenses: totalBazarExpenses,
+                    totalMeals: totalMeals,
+                    costPerMeal: costPerMeal,
+                    totalSharedFixedBills: totalSharedFixedBills,
+                    sharedFixedCostPerPerson: sharedFixedCostPerPerson,
+                    totalIndividualFixedContributions: totalIndividualFixedContributions,
+                    individualBalances: individualBalances,
+                    calculationDate: new Date().toLocaleString()
+                };
+                await saveMonthlySummaryToFirestore(monthlySummaryData);
+            }
+
+            resultsDisplay.innerHTML = resultsHTML;
+            updateMealChart(personMealCounts); // Update the chart with new meal counts
+        }
+
+        // Function to reset all input fields
+        async function resetForm() {
+            const confirmed = await showConfirm('Are you sure you want to reset all data? This will clear all expenses, bazar, and meal counts.');
+            if (!confirmed) {
+                return;
+            }
+
+            // Reset shared fixed bills
+            resetExpenseInputs();
+
+            // Reset daily individual meal count inputs in UI
+            const dailyMealCountInputs = dailyIndividualMealCountsBody.querySelectorAll('input[type="number"]');
+            dailyMealCountInputs.forEach(input => {
+                input.value = 0;
+            });
+
+            // Clear data in Firestore
+            if (userId) {
+                try {
+                    await setDoc(expensesDocRef, {
+                        currentBill: 0, wifiBill: 0, cleanBill: 0, waterBill: 0, khalaBill: 0, gasBill: 0,
+                        fixedContributions: { ashraful: 0, tuhin: 0, tohidul: 0, sayem: 0, sani: 0 },
+                        bazarContributions: { ashraful: 0, tuhin: 0, tohidul: 0, sayem: 0, sani: 0 }
+                    });
+
+                    // Delete all daily meal count documents for the user
+                    const querySnapshot = await getDocs(mealCountsCollectionRef);
+                    const deletePromises = [];
+                    querySnapshot.forEach((docSnap) => {
+                        deletePromises.push(setDoc(docSnap.ref, {})); // Set to empty object to clear fields
+                    });
+                    await Promise.all(deletePromises);
+
+                    // Clear the monthly summary as well
+                    await setDoc(monthlySummaryDocRef, {}); // Set to empty object to clear
+
+                    // Clear monthly payments
+                    await setDoc(monthlyPaymentsDocRef, {});
+
+                    await showAlert('All data has been reset and cleared from the database!');
+                } catch (error) {
+                    console.error("Error resetting data in Firestore:", error);
+                    await showAlert("Failed to reset data in the database. Please try again.");
+                }
+            } else {
+                await showAlert("Data reset locally. Sign in to reset database data.");
+            }
+
+
+            // Hide and clear fixed bill results
+            fixedBillResultsDiv.innerHTML = '';
+            fixedBillResultsDiv.classList.add('hidden');
+
+            resultsDisplay.innerHTML = '<p class="text-gray-700 text-center">Enter values and click "Calculate Full Monthly Cost" to see results.</p>';
+
+            // Reset chart (destroy and re-create on next calculation)
+            if (mealChartInstance) {
+                mealChartInstance.destroy();
+                mealChartInstance = null;
+            }
+            // Re-render chart with default empty data
+            updateMealChart({ ashraful: 0, tuhin: 0, tohidul: 0, sayem: 0, sani: 0 });
+            displayPreviousMonthData(null); // Clear previous month data on reset
+            displayMonthlyPayments(null); // Clear monthly payments on reset
+        }
+
+        // --- Event Listeners ---
+        // Navigation
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const pageId = e.target.dataset.page + 'Page';
+                showPage(pageId);
+            });
+        });
+
+        // Dashboard Page
+        enableMealEditBtn.addEventListener('click', showPasswordModal);
+        changePasswordBtn.addEventListener('click', showChangePasswordModal);
+
+        // Password Modal (for meal inputs)
+        submitPasswordBtn.addEventListener('click', checkPassword);
+        cancelPasswordBtn.addEventListener('click', hidePasswordModal);
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                // Determine which password check to run based on the context
+                if (submitPasswordBtn.onclick === checkPassword) {
+                    checkPassword(); // For meal inputs
+                } else if (submitPasswordBtn.onclick === showPasswordModalForPaidStatus) {
+                    // This case is handled by the anonymous function set in showPasswordModalForPaidStatus
+                    // We need to explicitly call it or re-trigger the click
+                    submitPasswordBtn.click();
+                }
+            }
+        });
+
+        // Change Password Modal
+        submitChangePasswordBtn.addEventListener('click', changePassword);
+        cancelChangePasswordBtn.addEventListener('click', hideChangePasswordModal);
+
+        // Notice Board
+        saveNoticeBtn.addEventListener('click', saveNotice);
+        clearNoticeBtn.addEventListener('click', clearNotices);
+
+        // Month Calculator Page
+        calculateBtn.addEventListener('click', calculateMealCost);
+        resetBtn.addEventListener('click', resetForm);
+        calculateFixedBtn.addEventListener('click', calculateFixedBillsPerPerson);
+
+        // Paid/Non-Paid Status Section
+        enablePaidStatusEditBtn.addEventListener('click', showPasswordModalForPaidStatus);
+        savePaidStatusBtn.addEventListener('click', saveMonthlyPaymentsToFirestore);
+
+
+        // Add event listeners to expense input fields for saving to Firestore on change
+        const expenseInputs = [
+            currentBillInput, wifiBillInput, cleanBillInput, waterBillInput, khalaBillInput, gasBillInput,
+            ...Object.values(fixedInputs),
+            ...Object.values(bazarInputs)
+        ];
+        expenseInputs.forEach(input => {
+            input.addEventListener('change', saveExpensesToFirestore);
+        });
+
+        // --- Initial Setup on Load ---
+        window.onload = () => {
+            generateDailyIndividualMealCounts(); // Generate the daily meal count table structure
+            showPage('homePage'); // Show home page by default
+            // Initialize chart with empty data initially. Data will be loaded via onSnapshot.
+            updateMealChart({ ashraful: 0, tuhin: 0, tohidul: 0, sayem: 0, sani: 0 });
+            // The onAuthStateChanged listener will handle loading all data from Firestore
+            // including password, notices, expenses, meal counts, and monthly summary.
+            // Also ensure paid status inputs are disabled initially.
+            disablePaidStatusInputs();
+        };
+
+    </script>
+</body>
+</html>
